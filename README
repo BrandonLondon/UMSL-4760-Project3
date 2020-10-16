@@ -1,11 +1,44 @@
 Devence: Bhatai states that we did not have to implement a shared clock. We would use time or formated time for everything.
 
 # DESCRIPTION:
-The goal of this homework is to become familiar with using shared memory and creating multiple processes. We will be using getopt and perror as well as fork().
+The goal of this homework is to become familiar with semaphores in the Unix operating system. You are working on the
+same problem as the last assignment but using semaphores to solve it.
 
-In this project, you will spawn a number of children, with each child determening if its a palindrome and writing to the appropraite output log and files. A simple definition of the subset sum problem is: Given a set of integers and a value sum, determine if there is a subset of the given set with sum equal to the given sum.
+The main program will read the list of palindromes from a file (one
+string per line) into shared memory and fork off processes. Each child will test the string at the index assigned to it and
+write the string into appropriate file, named palin.out and nopalin.out. In addition, the processes will write into a log
+file (described below). You will have to use semaphores to protect the critical resources – the two files.
+Make sure you never have more than 20 processes in the system at any time, even if the program is invoked with n > 20.
+Add the pid of the child to the file as comment in the log file. The preferred output format for log file is:
+PID Index String
+where Index is the logical number for the child, assigned internally by your code, and varies between 0 and n − 1.
+The child process will be execed by the command
+palin xx
+where xx is the index number of the string to be tested in shared memory. You can supply other parameters in exec as
+needed, such as the logical number of the child.
+If a process starts to execute code to enter the critical section, it must print a message to that effect on stderr. It will be
+a good idea to include the time when that happens. Also, indicate the time on stderr when the process actually enters
+and exits the critical section. Within the critical section, wait for [0-2] seconds before you write into the file.
+The code for each child process should use the following template:
 
-Your project should consist of one program, which will fork off versions of itself to do some file processing. To do this, it will start by taking some command line arguments. Your executable should be called logParse. You must implement at least the following command line arguments using getopt:
+determine if the string is a palindrome;
+execute code to enter critical section;
+sleep for random amount of time (between 0 and 2 seconds);
+/* Critical section */
+execute code to exit from critical section;
+
+Note that all of these options should have some sensible default values, which should be described if -h is specified. For
+example, if the project is called with: master -s 2 palindromes then master will fork/exec 2 child processes but then
+not create any more until one of them terminated. Once a child terminates, it’ll create another, continuing this until it has
+processed all the strings in the data file. At that point it will wait until all of them have terminated. When done, it would
+output appropriate information to the logfile, called output.log.
+Termination Criteria: There are several termination criteria. First, if all the children have finished, the parent process
+should deallocate shared memory and terminate.
+In addition, I expect your program to terminate after the specified amount of time (-t option) of real clock. This can be
+done using a timeout signal, at which point it should kill all currently running child processes and terminate. It should
+also catch the ctrl-c signal, free up shared memory and then terminate all children. No matter how it terminates, master
+should also output the value of the system clock to the output file.
+
 ```
 -h Describe how the project should be run and then, terminate.
 -n x Indicate the maximum total of child processes master will ever create. (Default 4)
@@ -25,42 +58,6 @@ I
 Hate
 C
 
-The main program will read the list of palindromes from a file
-(one string per line) into shared memory and fork off processes. Each child will test the string at the index assigned
-to it and write the string into appropriate file, named palin.out and nopalin.out. In addition, the processes will
-write into a log file (described below). You will have to use the code for multiple process ipc problem (Solution 4 in
-notes) to protect the critical resources – the two files.
-Make sure you never have more than 20 processes in the system at any time, even if the program is invoked with
-n > 20. Add the pid of the child to the file as comment in the log file. The preferred output format for log file is:
-PID Index String
-where Index is the logical number for the child, assigned internally by your code, and varies between 0 and n − 1.
-The child process will be execed by the command
-palin xx
-where xx is the index number of the string to be tested in shared memory. You can supply other parameters in exec
-as needed, such as the logical number of the child.
-If a process starts to execute code to enter the critical section, it must print a message to that effect on stderr. It
-will be a good idea to include the time when that happens. Also, indicate the time on stderr when the process
-actually enters and exits the critical section. Within the critical section, wait for [0-2] seconds before you write into
-the file.
-The code for each child process should use the following template:
-determine if the string is a palindrome;
-Concurrent Unix Processes and shared memory 2
-execute code to enter critical section;
-sleep for random amount of time (between 0 and 2 seconds);
-/* Critical section */
-execute code to exit from critical section;
-You will be required to create separate child processes from your main process, called master. That is, the main
-process will just spawn the child processes and wait for them to finish. master also sets a timer at the start of
-computation to 100 seconds. If computation has not finished by this time, master kills all the child processes and
-then exits. Make sure that you print appropriate message(s).
-In addition, master should print a message when an interrupt signal (^C) is received. All the children should be
-killed as a result. All other signals are ignored. Make sure that the processes handle multiple interrupts correctly.
-As a precaution, add this feature only after your program is well debugged.
-The code for and child processes should be compiled separately and the executables be called master and palin.
-Other points to remember: You are required to use fork, exec (or one of its variants), wait, and exit to manage
-multiple processes. Use shmctl suite of calls for shared memory allocation. Also make sure that you do not have
-more than twenty processes in the system at any
-```
 # HOW TO RUN:
 master should take in several command line options as follows:
 master -h
@@ -72,15 +69,15 @@ master [-n x] [-s x] [-t time] infile
 [infile] Input file containing strings to be tested.
 ```
 # VERSION CONTROL:
-link: "https://github.com/BrandonLondon/UMSL-4760-Project2/commits/master"
+link: "https://github.com/BrandonLondon/UMSL-4760-Project3"
 
-==============================================================================Commits on Oct,01 2020=============================================================================
+==============================================================================Commits on Oct 16, 2020=============================================================================
 -Finished ReadMe Added last minute comments to code and Final Cleanup
 
 @BrandonLondon
 BrandonLondon committed 13 minutes ago
  
-====================================================================================Commits on Sep 30, 2020======================================================================
+====================================================================================Commits on Oct 15, 2020======================================================================
 Finished Rough copy of Palin.cpp and main.cpp
 
 @BrandonLondon
@@ -101,108 +98,8 @@ Bug***** Program wont stop
 @BrandonLondon
 BrandonLondon committed yesterday
  
-=====================================================================================Commits on Sep 29, 2020=====================================================================
-Implemented s and n
+=====================================================================================Commits on Oct 14, 2020=====================================================================
+Copied Over project one.
 
 @BrandonLondon
 BrandonLondon committed 2 days ago
- 
-Created variables to hold paramter values
-
-@BrandonLondon
-BrandonLondon committed 2 days ago
- 
-Kill the Child
-
-@BrandonLondon
-BrandonLondon committed 2 days ago
- 
-Implemented control C signal handlers
-
-@BrandonLondon
-BrandonLondon committed 2 days ago
- 
-Trying to implement crntl C handlers
-
-@BrandonLondon
-BrandonLondon committed 2 days ago
- 
-Added Structs to palin
-
-@BrandonLondon
-BrandonLondon committed 2 days ago
- 
-Added structs to master
-
-@BrandonLondon
-BrandonLondon committed 2 days ago
- 
-===========================================================Commits on Sep 28, 2020=======================================================================
-Gave up on type def, switch to just structs
-
-@BrandonLondon
-BrandonLondon committed 3 days ago
- 
-
-======================================Commits on Sep 25, 2020============================================================================================
-attached shared memory, made sure to assign group id for kill
-
-@BrandonLondon
-BrandonLondon committed 6 days ago
- 
-Added a release memory function 
-
-@BrandonLondon
-BrandonLondon committed 6 days ago
- 
-added a bunch of things
-
-@BrandonLondon
-BrandonLondon committed 6 days ago
- 
-help
-
-@BrandonLondon
-BrandonLondon committed 6 days ago
- 
-help
-
-@BrandonLondon
-BrandonLondon committed 6 days ago
- 
-help
-
-@BrandonLondon
-BrandonLondon committed 6 days ago
- 
-Trying to add memory
-
-@BrandonLondon
-BrandonLondon committed 6 days ago
- 
-Depression Begins
-
-BrandonLondon
-BrandonLondon committed 6 days ago
- 
-added getopt
-
-Brandon London
-Brandon London committed 6 days ago
- 
-==========================================================================Commits on Sep 24, 2020======================================================================
-Some changes to file extensions
-
-@BrandonLondon
-BrandonLondon committed 7 days ago
- 
-Some changes to file extensions
-
-@BrandonLondon
-BrandonLondon committed 7 days ago
- 
-===============================================================================Commits on Sep 23, 2020=====================================================================
-Inital commit, created files
-
-Brandon London
-Brandon London committed 8 days ago
